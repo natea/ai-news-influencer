@@ -1,6 +1,6 @@
 {
   "name": "Basic Development DevPod",
-  "image": "mcr.microsoft.com/devcontainers/base:debian",
+  "image": "mcr.microsoft.com/devcontainers/base:debian12",
   "runArgs": [
     "--privileged"
   ],
