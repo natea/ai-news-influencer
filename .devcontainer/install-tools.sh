@@ -197,124 +197,85 @@ else
     record_status "claude-code" "✅ Already Installed" "Version: $(claude-code --version 2>/dev/null || echo 'unknown')"
 fi
 
-# Install UV (Python package manager)
-echo "### 🐍 UV Installation" >> "$REPORT_FILE"
-if ! command_exists uv; then
-    echo "Installing UV Python package manager..."
-    
-    # First, ensure we have curl or wget for downloading
-    if command_exists curl; then
-        DOWNLOAD_CMD="curl -LsSf"
-    elif command_exists wget; then
-        DOWNLOAD_CMD="wget -qO-"
-    else
-        echo "Neither curl nor wget found. Attempting to install curl..."
-        if command_exists apt-get; then
-            try_install "curl" "apt-get install -y curl"
-        elif command_exists yum; then
-            try_install "curl" "yum install -y curl"
-        elif command_exists apk; then
-            try_install "curl" "apk add curl"
-        fi
-        
-        if command_exists curl; then
-            DOWNLOAD_CMD="curl -LsSf"
-        else
-            record_status "uv" "❌ Failed" "Cannot install - neither curl nor wget available"
-            echo "Failed to install UV - missing download tools"
-        fi
-    fi
-    
-    # If we have a download command, proceed with installation
-    if [ -n "${DOWNLOAD_CMD:-}" ]; then
-        # UV has a universal installer script
-        INSTALL_UV="$DOWNLOAD_CMD https://astral.sh/uv/install.sh | sh"
-        
-        # Try to install UV using the official installer
-        echo "Attempting UV installation via official installer..."
-        if bash -c "$INSTALL_UV" 2>/dev/null; then
-            # Source the env file to update PATH for current session
-            if [ -f "$HOME/.cargo/env" ]; then
-                source "$HOME/.cargo/env"
-            fi
-            # Verify installation
-            if command_exists uv; then
-                record_status "uv" "✅ Success" "Installed via official installer"
-            else
-                # PATH might not be updated yet
-                if [ -f "$HOME/.cargo/bin/uv" ]; then
-                    export PATH="$HOME/.cargo/bin:$PATH"
-                    record_status "uv" "✅ Success" "Installed via official installer (PATH updated)"
-                else
-                    record_status "uv" "⚠️ Partial" "Installed but not in PATH - restart shell"
-                fi
-            fi
-        else
-            # Try alternative installation method via pip
-            echo "Official installer failed, trying pip installation..."
-            if command_exists python3 || command_exists python; then
-                PYTHON_CMD=$(command -v python3 || command -v python)
-                
-                # Check if pip is available
-                if $PYTHON_CMD -m pip --version >/dev/null 2>&1; then
-                    echo "Installing UV via pip..."
-                    
-                    if $PYTHON_CMD -m pip install --user uv 2>/dev/null; then
-                        record_status "uv" "✅ Success" "Installed via pip (user)"
-                    elif command_exists sudo; then
-                        echo "Retrying UV installation with sudo..."
-                        if sudo $PYTHON_CMD -m pip install uv 2>/dev/null; then
-                            record_status "uv" "✅ Success" "Installed via pip (system)"
-                        else
-                            record_status "uv" "❌ Failed" "All installation methods failed"
-                        fi
-                    else
-                        record_status "uv" "❌ Failed" "pip installation failed without sudo"
-                    fi
-                else
-                    record_status "uv" "❌ Failed" "Python found but pip not available"
-                fi
-            else
-                record_status "uv" "❌ Failed" "Python not found - required for fallback installation"
-            fi
-        fi
-    fi
-else
-    # UV is already installed
-    UV_VERSION=$(uv --version 2>/dev/null | head -n1 || echo 'unknown')
-    record_status "uv" "✅ Already Installed" "Version: $UV_VERSION"
-    
-    # Check if UV is properly configured
-    if uv --version >/dev/null 2>&1; then
-        echo "UV is properly installed and accessible"
-    else
-        echo "UV is installed but may have PATH issues"
-    fi
-fi
+# Install ccdash from GitHub
+echo "### 📊 ccdash Installation" >> "$REPORT_FILE"
+if ! command_exists ccdash; then
+    echo "Installing ccdash from GitHub..."
 
-# Install claude-monitor using UV
-echo "### 📊 Claude Monitor Installation" >> "$REPORT_FILE"
-if command_exists uv; then
-    # Check if claude-monitor is already installed
-    if uv tool list 2>/dev/null | grep -q "claude-monitor"; then
-        MONITOR_VERSION=$(uv tool list 2>/dev/null | grep "claude-monitor" | awk '{print $2}' || echo 'unknown')
-        record_status "claude-monitor" "✅ Already Installed" "Version: $MONITOR_VERSION"
+    # Determine architecture
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64)  CCDASH_ARCH="amd64" ;;
+        aarch64) CCDASH_ARCH="arm64" ;;
+        arm64)   CCDASH_ARCH="arm64" ;;
+        *)       CCDASH_ARCH="$ARCH" ;;
+    esac
+
+    # Determine OS
+    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+
+    # Construct download URL
+    CCDASH_URL="https://github.com/jedarden/ccdash/releases/latest/download/ccdash-${OS}-${CCDASH_ARCH}"
+
+    # Download and install
+    INSTALL_DIR="/usr/local/bin"
+    CCDASH_TMP=$(mktemp)
+
+    echo "Downloading ccdash from $CCDASH_URL..."
+
+    # Try curl first, then wget
+    if command_exists curl; then
+        DOWNLOAD_SUCCESS=false
+        if curl -fsSL "$CCDASH_URL" -o "$CCDASH_TMP" 2>/dev/null; then
+            DOWNLOAD_SUCCESS=true
+        fi
+    elif command_exists wget; then
+        DOWNLOAD_SUCCESS=false
+        if wget -q "$CCDASH_URL" -O "$CCDASH_TMP" 2>/dev/null; then
+            DOWNLOAD_SUCCESS=true
+        fi
     else
-        echo "Installing claude-monitor via UV..."
-        if uv tool install claude-monitor 2>/dev/null; then
-            record_status "claude-monitor" "✅ Success" "Installed via UV tool"
-        else
-            # Try with --force in case of partial installation
-            echo "Retrying claude-monitor installation with --force..."
-            if uv tool install claude-monitor --force 2>/dev/null; then
-                record_status "claude-monitor" "✅ Success" "Installed via UV tool (forced)"
+        record_status "ccdash" "❌ Failed" "Neither curl nor wget available"
+        DOWNLOAD_SUCCESS=false
+    fi
+
+    if [ "$DOWNLOAD_SUCCESS" = true ]; then
+        chmod +x "$CCDASH_TMP"
+
+        # Try to install to /usr/local/bin
+        if mv "$CCDASH_TMP" "$INSTALL_DIR/ccdash" 2>/dev/null; then
+            record_status "ccdash" "✅ Success" "Installed to $INSTALL_DIR"
+        elif command_exists sudo; then
+            if sudo mv "$CCDASH_TMP" "$INSTALL_DIR/ccdash" 2>/dev/null; then
+                record_status "ccdash" "✅ Success" "Installed to $INSTALL_DIR with sudo"
             else
-                record_status "claude-monitor" "❌ Failed" "UV tool installation failed"
+                # Try user local bin as fallback
+                USER_BIN="$HOME/.local/bin"
+                mkdir -p "$USER_BIN"
+                if mv "$CCDASH_TMP" "$USER_BIN/ccdash" 2>/dev/null; then
+                    record_status "ccdash" "✅ Success" "Installed to $USER_BIN"
+                else
+                    record_status "ccdash" "❌ Failed" "Could not install binary"
+                    rm -f "$CCDASH_TMP"
+                fi
+            fi
+        else
+            # Try user local bin as fallback
+            USER_BIN="$HOME/.local/bin"
+            mkdir -p "$USER_BIN"
+            if mv "$CCDASH_TMP" "$USER_BIN/ccdash" 2>/dev/null; then
+                record_status "ccdash" "✅ Success" "Installed to $USER_BIN"
+            else
+                record_status "ccdash" "❌ Failed" "Could not install binary"
+                rm -f "$CCDASH_TMP"
             fi
         fi
+    else
+        record_status "ccdash" "❌ Failed" "Download failed"
+        rm -f "$CCDASH_TMP"
     fi
 else
-    record_status "claude-monitor" "❌ Failed" "UV not available - install UV first"
+    record_status "ccdash" "✅ Already Installed" "Version: $(ccdash --version 2>/dev/null || echo 'unknown')"
 fi
 
 # Write the status table to the report
@@ -323,13 +284,12 @@ echo "|------|--------|-------|" >> "$REPORT_FILE"
 echo "| tmux | ${INSTALL_STATUS[tmux]} | ${INSTALL_NOTES[tmux]} |" >> "$REPORT_FILE"
 echo "| GitHub CLI | ${INSTALL_STATUS[gh]} | ${INSTALL_NOTES[gh]} |" >> "$REPORT_FILE"
 echo "| Claude Code | ${INSTALL_STATUS[claude-code]} | ${INSTALL_NOTES[claude-code]} |" >> "$REPORT_FILE"
-echo "| UV | ${INSTALL_STATUS[uv]} | ${INSTALL_NOTES[uv]} |" >> "$REPORT_FILE"
-echo "| Claude Monitor | ${INSTALL_STATUS[claude-monitor]} | ${INSTALL_NOTES[claude-monitor]} |" >> "$REPORT_FILE"
+echo "| ccdash | ${INSTALL_STATUS[ccdash]} | ${INSTALL_NOTES[ccdash]} |" >> "$REPORT_FILE"
 echo "" >> "$REPORT_FILE"
 
 # Add manual installation instructions for failed items
 FAILED_ITEMS=0
-for tool in tmux gh claude-code uv claude-monitor; do
+for tool in tmux gh claude-code ccdash; do
     if [[ "${INSTALL_STATUS[$tool]}" == *"Failed"* ]]; then
         ((FAILED_ITEMS++))
     fi
@@ -403,63 +363,40 @@ if [ $FAILED_ITEMS -gt 0 ]; then
         echo "" >> "$REPORT_FILE"
     fi
     
-    if [[ "${INSTALL_STATUS[uv]}" == *"Failed"* ]]; then
-        echo "### 🐍 Installing UV manually" >> "$REPORT_FILE"
+    if [[ "${INSTALL_STATUS[ccdash]}" == *"Failed"* ]]; then
+        echo "### 📊 Installing ccdash manually" >> "$REPORT_FILE"
         echo "" >> "$REPORT_FILE"
-        echo "UV is a fast Python package manager written in Rust." >> "$REPORT_FILE"
+        echo "Download the binary for your platform from GitHub releases:" >> "$REPORT_FILE"
         echo "" >> "$REPORT_FILE"
-        echo "**Method 1: Official Installer (Recommended):**" >> "$REPORT_FILE"
+        echo "**For Linux (amd64):**" >> "$REPORT_FILE"
         echo '```bash' >> "$REPORT_FILE"
-        echo "curl -LsSf https://astral.sh/uv/install.sh | sh" >> "$REPORT_FILE"
+        echo "curl -fsSL https://github.com/jedarden/ccdash/releases/latest/download/ccdash-linux-amd64 -o ccdash" >> "$REPORT_FILE"
+        echo "chmod +x ccdash" >> "$REPORT_FILE"
+        echo "sudo mv ccdash /usr/local/bin/" >> "$REPORT_FILE"
         echo '```' >> "$REPORT_FILE"
         echo "" >> "$REPORT_FILE"
-        echo "**Method 2: Using pip:**" >> "$REPORT_FILE"
+        echo "**For Linux (arm64):**" >> "$REPORT_FILE"
         echo '```bash' >> "$REPORT_FILE"
-        echo "pip install uv" >> "$REPORT_FILE"
+        echo "curl -fsSL https://github.com/jedarden/ccdash/releases/latest/download/ccdash-linux-arm64 -o ccdash" >> "$REPORT_FILE"
+        echo "chmod +x ccdash" >> "$REPORT_FILE"
+        echo "sudo mv ccdash /usr/local/bin/" >> "$REPORT_FILE"
         echo '```' >> "$REPORT_FILE"
         echo "" >> "$REPORT_FILE"
-        echo "**Method 3: Using pipx (if installed):**" >> "$REPORT_FILE"
+        echo "**For macOS (amd64):**" >> "$REPORT_FILE"
         echo '```bash' >> "$REPORT_FILE"
-        echo "pipx install uv" >> "$REPORT_FILE"
+        echo "curl -fsSL https://github.com/jedarden/ccdash/releases/latest/download/ccdash-darwin-amd64 -o ccdash" >> "$REPORT_FILE"
+        echo "chmod +x ccdash" >> "$REPORT_FILE"
+        echo "sudo mv ccdash /usr/local/bin/" >> "$REPORT_FILE"
         echo '```' >> "$REPORT_FILE"
         echo "" >> "$REPORT_FILE"
-        echo "**Method 4: Using Homebrew (macOS/Linux):**" >> "$REPORT_FILE"
+        echo "**For macOS (arm64/Apple Silicon):**" >> "$REPORT_FILE"
         echo '```bash' >> "$REPORT_FILE"
-        echo "brew install uv" >> "$REPORT_FILE"
+        echo "curl -fsSL https://github.com/jedarden/ccdash/releases/latest/download/ccdash-darwin-arm64 -o ccdash" >> "$REPORT_FILE"
+        echo "chmod +x ccdash" >> "$REPORT_FILE"
+        echo "sudo mv ccdash /usr/local/bin/" >> "$REPORT_FILE"
         echo '```' >> "$REPORT_FILE"
         echo "" >> "$REPORT_FILE"
-        echo "**After installation, you may need to add UV to your PATH:**" >> "$REPORT_FILE"
-        echo '```bash' >> "$REPORT_FILE"
-        echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$REPORT_FILE"
-        echo '```' >> "$REPORT_FILE"
-        echo "" >> "$REPORT_FILE"
-        echo "**For more information, visit:** https://github.com/astral-sh/uv" >> "$REPORT_FILE"
-        echo "" >> "$REPORT_FILE"
-    fi
-    
-    if [[ "${INSTALL_STATUS[claude-monitor]}" == *"Failed"* ]]; then
-        echo "### 📊 Installing Claude Monitor manually" >> "$REPORT_FILE"
-        echo "" >> "$REPORT_FILE"
-        echo "Claude Monitor requires UV to be installed first." >> "$REPORT_FILE"
-        echo "" >> "$REPORT_FILE"
-        echo "**Step 1: Ensure UV is installed (see UV instructions above)**" >> "$REPORT_FILE"
-        echo "" >> "$REPORT_FILE"
-        echo "**Step 2: Install Claude Monitor using UV:**" >> "$REPORT_FILE"
-        echo '```bash' >> "$REPORT_FILE"
-        echo "uv tool install claude-monitor" >> "$REPORT_FILE"
-        echo '```' >> "$REPORT_FILE"
-        echo "" >> "$REPORT_FILE"
-        echo "**If the tool is already partially installed, use --force:**" >> "$REPORT_FILE"
-        echo '```bash' >> "$REPORT_FILE"
-        echo "uv tool install claude-monitor --force" >> "$REPORT_FILE"
-        echo '```' >> "$REPORT_FILE"
-        echo "" >> "$REPORT_FILE"
-        echo "**After installation, claude-monitor commands will be available:**" >> "$REPORT_FILE"
-        echo '```bash' >> "$REPORT_FILE"
-        echo "claude-monitor --help" >> "$REPORT_FILE"
-        echo '```' >> "$REPORT_FILE"
-        echo "" >> "$REPORT_FILE"
-        echo "**For more information, visit the claude-monitor documentation**" >> "$REPORT_FILE"
+        echo "**For more information, visit:** https://github.com/jedarden/ccdash" >> "$REPORT_FILE"
         echo "" >> "$REPORT_FILE"
     fi
 else
