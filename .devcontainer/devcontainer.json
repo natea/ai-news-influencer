@@ -17,9 +17,7 @@
         "vsls-contrib.gistfs",
         "github.copilot",
         "github.copilot-chat",
-        "anthropic.claude-code",
-        "codeflow-studio.claude-code-extension",
-        "suzuki0430.ccusage-vscode"
+        "kilocode.kilo-code"
       ]
     }
   },
