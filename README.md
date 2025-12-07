@@ -22,15 +22,12 @@ devpod up https://github.com/jedarden/agentists-quickstart.git#workspace/basic
   - tmux: Terminal multiplexer for managing multiple sessions
   - claude-code: Anthropic's official CLI for Claude
   - GitHub CLI (gh): Command-line interface for GitHub
-  - UV: Fast Python package manager written in Rust
-  - claude-monitor: Monitor and track Claude API usage
+  - ccdash: Claude Code dashboard for monitoring usage
 - **🧬 VS Code Extensions**:
   - Roo Cline: AI-powered coding assistant
   - GistFS: Access GitHub Gists directly in VS Code
   - GitHub Copilot: AI pair programming
   - GitHub Copilot Chat: Conversational AI assistance
-  - Claude Code: Anthropic's official VS Code extension for Claude
-  - Claude Code Extension: Enhanced Claude Code cost tracking and features
 
 ## ✨ Features
 
