@@ -278,6 +278,52 @@ else
     record_status "ccdash" "✅ Already Installed" "Version: $(ccdash --version 2>/dev/null || echo 'unknown')"
 fi
 
+# Install MANA from GitHub
+echo "### 🧠 MANA Installation" >> "$REPORT_FILE"
+MANA_DIR="$HOME/.mana"
+if [ ! -f "$MANA_DIR/mana" ]; then
+    echo "Installing MANA from GitHub..."
+
+    # Create mana directory
+    mkdir -p "$MANA_DIR"
+
+    # Download URL (single binary, no platform variants)
+    MANA_URL="https://github.com/jedarden/MANA/releases/latest/download/mana"
+
+    MANA_TMP=$(mktemp)
+
+    echo "Downloading MANA from $MANA_URL..."
+
+    # Try curl first, then wget
+    DOWNLOAD_SUCCESS=false
+    if command_exists curl; then
+        if curl -fsSL "$MANA_URL" -o "$MANA_TMP" 2>/dev/null; then
+            DOWNLOAD_SUCCESS=true
+        fi
+    elif command_exists wget; then
+        if wget -q "$MANA_URL" -O "$MANA_TMP" 2>/dev/null; then
+            DOWNLOAD_SUCCESS=true
+        fi
+    else
+        record_status "mana" "❌ Failed" "Neither curl nor wget available"
+    fi
+
+    if [ "$DOWNLOAD_SUCCESS" = true ]; then
+        chmod +x "$MANA_TMP"
+        if mv "$MANA_TMP" "$MANA_DIR/mana" 2>/dev/null; then
+            record_status "mana" "✅ Success" "Installed to $MANA_DIR"
+        else
+            record_status "mana" "❌ Failed" "Could not install binary"
+            rm -f "$MANA_TMP"
+        fi
+    else
+        record_status "mana" "❌ Failed" "Download failed"
+        rm -f "$MANA_TMP"
+    fi
+else
+    record_status "mana" "✅ Already Installed" "Version: $($MANA_DIR/mana --version 2>/dev/null || echo 'unknown')"
+fi
+
 # Write the status table to the report
 echo "| Tool | Status | Notes |" >> "$REPORT_FILE"
 echo "|------|--------|-------|" >> "$REPORT_FILE"
@@ -285,11 +331,12 @@ echo "| tmux | ${INSTALL_STATUS[tmux]} | ${INSTALL_NOTES[tmux]} |" >> "$REPORT_F
 echo "| GitHub CLI | ${INSTALL_STATUS[gh]} | ${INSTALL_NOTES[gh]} |" >> "$REPORT_FILE"
 echo "| Claude Code | ${INSTALL_STATUS[claude-code]} | ${INSTALL_NOTES[claude-code]} |" >> "$REPORT_FILE"
 echo "| ccdash | ${INSTALL_STATUS[ccdash]} | ${INSTALL_NOTES[ccdash]} |" >> "$REPORT_FILE"
+echo "| MANA | ${INSTALL_STATUS[mana]} | ${INSTALL_NOTES[mana]} |" >> "$REPORT_FILE"
 echo "" >> "$REPORT_FILE"
 
 # Add manual installation instructions for failed items
 FAILED_ITEMS=0
-for tool in tmux gh claude-code ccdash; do
+for tool in tmux gh claude-code ccdash mana; do
     if [[ "${INSTALL_STATUS[$tool]}" == *"Failed"* ]]; then
         ((FAILED_ITEMS++))
     fi
@@ -397,6 +444,26 @@ if [ $FAILED_ITEMS -gt 0 ]; then
         echo '```' >> "$REPORT_FILE"
         echo "" >> "$REPORT_FILE"
         echo "**For more information, visit:** https://github.com/jedarden/ccdash" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+    fi
+
+    if [[ "${INSTALL_STATUS[mana]}" == *"Failed"* ]]; then
+        echo "### 🧠 Installing MANA manually" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo "Download the binary from GitHub releases:" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo '```bash' >> "$REPORT_FILE"
+        echo "mkdir -p ~/.mana" >> "$REPORT_FILE"
+        echo "curl -fsSL https://github.com/jedarden/MANA/releases/latest/download/mana -o ~/.mana/mana" >> "$REPORT_FILE"
+        echo "chmod +x ~/.mana/mana" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo "**Verify installation:**" >> "$REPORT_FILE"
+        echo '```bash' >> "$REPORT_FILE"
+        echo "~/.mana/mana --version" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo "**For more information, visit:** https://github.com/jedarden/MANA" >> "$REPORT_FILE"
         echo "" >> "$REPORT_FILE"
     fi
 else

@@ -23,11 +23,15 @@ devpod up https://github.com/jedarden/agentists-quickstart.git#workspace/basic
   - claude-code: Anthropic's official CLI for Claude
   - GitHub CLI (gh): Command-line interface for GitHub
   - ccdash: Claude Code dashboard for monitoring usage
+  - MANA: Memory-Augmented Neural Assistant for Claude Code context injection
 - **🧬 VS Code Extensions**:
   - Roo Cline: AI-powered coding assistant
   - GistFS: Access GitHub Gists directly in VS Code
   - GitHub Copilot: AI pair programming
   - GitHub Copilot Chat: Conversational AI assistance
+  - Kilo Code: AI coding assistant
+- **⚙️ Claude Code Configuration**:
+  - Pre-configured MANA hooks in `.claude/settings.json` for enhanced context injection
 
 ## ✨ Features
 
