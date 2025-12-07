@@ -278,13 +278,15 @@ else
     record_status "ccdash" "✅ Already Installed" "Version: $(ccdash --version 2>/dev/null || echo 'unknown')"
 fi
 
-# Install MANA from GitHub
+# Install MANA from GitHub to workspace root .mana directory
 echo "### 🧠 MANA Installation" >> "$REPORT_FILE"
-MANA_DIR="$HOME/.mana"
+# Get workspace root (parent of .devcontainer)
+WORKSPACE_ROOT="$(dirname "$SCRIPT_DIR")"
+MANA_DIR="$WORKSPACE_ROOT/.mana"
 if [ ! -f "$MANA_DIR/mana" ]; then
     echo "Installing MANA from GitHub..."
 
-    # Create mana directory
+    # Create mana directory in workspace root
     mkdir -p "$MANA_DIR"
 
     # Download URL (single binary, no platform variants)
@@ -450,17 +452,17 @@ if [ $FAILED_ITEMS -gt 0 ]; then
     if [[ "${INSTALL_STATUS[mana]}" == *"Failed"* ]]; then
         echo "### 🧠 Installing MANA manually" >> "$REPORT_FILE"
         echo "" >> "$REPORT_FILE"
-        echo "Download the binary from GitHub releases:" >> "$REPORT_FILE"
+        echo "Download the binary from GitHub releases to your workspace root:" >> "$REPORT_FILE"
         echo "" >> "$REPORT_FILE"
         echo '```bash' >> "$REPORT_FILE"
-        echo "mkdir -p ~/.mana" >> "$REPORT_FILE"
-        echo "curl -fsSL https://github.com/jedarden/MANA/releases/latest/download/mana -o ~/.mana/mana" >> "$REPORT_FILE"
-        echo "chmod +x ~/.mana/mana" >> "$REPORT_FILE"
+        echo "mkdir -p .mana" >> "$REPORT_FILE"
+        echo "curl -fsSL https://github.com/jedarden/MANA/releases/latest/download/mana -o .mana/mana" >> "$REPORT_FILE"
+        echo "chmod +x .mana/mana" >> "$REPORT_FILE"
         echo '```' >> "$REPORT_FILE"
         echo "" >> "$REPORT_FILE"
         echo "**Verify installation:**" >> "$REPORT_FILE"
         echo '```bash' >> "$REPORT_FILE"
-        echo "~/.mana/mana --version" >> "$REPORT_FILE"
+        echo ".mana/mana --version" >> "$REPORT_FILE"
         echo '```' >> "$REPORT_FILE"
         echo "" >> "$REPORT_FILE"
         echo "**For more information, visit:** https://github.com/jedarden/MANA" >> "$REPORT_FILE"
