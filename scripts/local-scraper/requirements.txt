@@ -1,0 +1,7 @@
+# Local Twitter Scraper Dependencies
+# Run: pip install -r requirements.txt
+
+playwright>=1.40.0
+playwright-stealth>=1.0.6
+fake-useragent>=1.4.0
+rich>=13.0.0

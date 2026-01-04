@@ -12,6 +12,10 @@ RUN npm install
 # Copy source
 COPY . .
 
+# Build argument for backend URL (used at build time for rewrites)
+ARG BACKEND_URL=http://backend:8000
+ENV BACKEND_URL=${BACKEND_URL}
+
 # Build the application
 RUN npm run build
 

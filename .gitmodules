@@ -1,0 +1,3 @@
+[submodule "bencium-claude-code-design-skill"]
+	path = bencium-claude-code-design-skill
+	url = git@github.com:bencium/bencium-claude-code-design-skill.git

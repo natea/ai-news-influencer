@@ -49,7 +49,6 @@ RUN playwright install chromium
 
 # Copy application code
 COPY src/ ./src/
-COPY config/ ./config/
 
 # Create data directory
 RUN mkdir -p /app/data
