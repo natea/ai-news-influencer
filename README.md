@@ -1,87 +1,77 @@
-# 💡 Basic Development DevPod
+# AI News Influencer
 
-This branch contains a ready-to-use development environment with Docker-in-Docker and Node.js support.
+Autonomous AI-powered social media management system that curates AI news from Twitter/X and generates engaging LinkedIn content.
 
-## 🚀 Quick Start with DevPod
+## Overview
 
-```bash
-# Correct syntax using @ notation (Fix for Issue #5)
-devpod up https://github.com/jedarden/agentists-quickstart@workspace/basic
+This system automatically:
+- **Scrapes AI news** from Twitter/X using Playwright
+- **Ranks and selects** the most relevant stories using AI agents
+- **Generates LinkedIn posts** with Claude API
+- **Creates images** using DALL-E 3 (with Stable Diffusion fallback)
+- **Tracks engagement** metrics and optimizes strategy over time
+- **Automates posting** on a configurable schedule
 
-# Alternative: Using git URL fragment
-devpod up https://github.com/jedarden/agentists-quickstart.git#workspace/basic
+## Project Structure
+
+```
+├── backend/          # Python FastAPI backend
+│   ├── src/
+│   │   ├── agents/       # AI agents (selector, generator, optimizer)
+│   │   ├── api/          # REST API endpoints
+│   │   ├── integrations/ # Twitter, LinkedIn, Claude, DALL-E
+│   │   ├── database/     # SQLite + vector store
+│   │   └── services/     # Metrics, A/B testing, pipelines
+│   └── Dockerfile
+├── frontend/         # Next.js dashboard
+│   ├── app/              # Pages (dashboard, posts, metrics, settings)
+│   ├── components/       # React components
+│   └── Dockerfile
+├── nginx/            # Reverse proxy configuration
+├── docs/             # Project documentation
+└── docker-compose.yml
 ```
 
-## 📦 What's Included
+## Quick Start
 
-- **🖼️ Base Image**: Debian-based development container
-- **🐳 Docker-in-Docker**: Build and run containers within your development environment
-- **🟢 Node.js**: Full Node.js development environment
-- **🐍 Python**: Python development environment
-- **🛠️ Development Tools** (auto-installed on container creation):
-  - tmux: Terminal multiplexer for managing multiple sessions
-  - claude-code: Anthropic's official CLI for Claude
-  - GitHub CLI (gh): Command-line interface for GitHub
-  - ccdash: Claude Code dashboard for monitoring usage
-  - MANA: Memory-Augmented Neural Assistant for Claude Code context injection
-- **🧬 VS Code Extensions**:
-  - Roo Cline: AI-powered coding assistant
-  - GistFS: Access GitHub Gists directly in VS Code
-  - GitHub Copilot: AI pair programming
-  - GitHub Copilot Chat: Conversational AI assistance
-  - Kilo Code: AI coding assistant
-- **⚙️ Claude Code Configuration**:
-  - Pre-configured MANA hooks in `.claude/settings.json` for enhanced context injection
-
-## ✨ Features
-
-- Runs with privileged access to support Docker operations
-- Configured for the `vscode` user
-- Persistent container (won't shutdown on disconnect)
-- Automatic tool installation with graceful fallback and detailed installation report
-- Installation report saved to `.devcontainer/installation-report.md` for troubleshooting
-- If automatic installation fails during container startup, run manually: `bash .devcontainer/install-tools.sh`
-
-## 📋 Requirements
-
-- [DevPod CLI](https://devpod.sh/docs/getting-started/install)
-- Docker Desktop or Docker Engine
-- Active GitHub Copilot subscription (for Copilot features)
-
-## 🛠️ Tool Installation
-
-The development tools are automatically installed when the container starts via `.devcontainer/install-tools.sh`. However, this automatic installation may occasionally fail due to timing or permission issues during container initialization.
-
-### Manual Installation
-
-If any tools fail to install automatically, you can run the installation script manually:
+### With Docker (Recommended)
 
 ```bash
-bash .devcontainer/install-tools.sh
+# Clone and start all services
+docker compose up --build
 ```
 
-This will:
-- Attempt to install all missing tools
-- Generate a detailed report at `.devcontainer/installation-report.md`
-- Provide manual installation instructions for any tools that fail
+Access:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
 
-### Viewing Installation Status
+### Manual Setup
 
-To check which tools were successfully installed:
+See [backend/README.md](./backend/README.md) and [frontend/README.md](./frontend/README.md) for individual setup instructions.
 
-```bash
-cat .devcontainer/installation-report.md
+## Configuration
+
+Create a `.env` file in the backend directory:
+
+```env
+ANTHROPIC_API_KEY=your_anthropic_key
+OPENAI_API_KEY=your_openai_key
+LINKEDIN_CLIENT_ID=your_linkedin_client_id
+LINKEDIN_CLIENT_SECRET=your_linkedin_client_secret
 ```
 
-## 🔧 Manual VS Code Usage
+## Development Environment
 
-If you prefer to use VS Code directly:
+This repo includes a DevPod/devcontainer configuration for consistent development environments. See [DEVPOD.md](./DEVPOD.md) for setup instructions.
 
-1. Clone this branch: `git clone -b workspace/basic https://github.com/jedarden/agentists-quickstart`
-2. Open in VS Code
-3. Install the Dev Containers extension
-4. Click "Reopen in Container" when prompted
+## Documentation
 
-## 📚 Learn More
+- [Implementation Plan](./docs/implementation-plan.md) - Architecture and roadmap
+- [Tasks](./docs/tasks.md) - Development task tracking
+- [Backend README](./backend/README.md) - Backend setup and API reference
+- [DevPod Setup](./DEVPOD.md) - Development container configuration
 
-For more information about the Agentists project, visit the [main branch](https://github.com/jedarden/agentists-quickstart).
+## License
+
+MIT
